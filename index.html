@@ -44,14 +44,8 @@
                 map.removeLayer(rect);
             }
 
-            function onMapClick(e) {
-                console.log(e);
-                var hash = NGeoHash.encode(e.latlng.lat, e.latlng.lng, 5);
-
-//                popup
-//                        .setLatLng(e.latlng)
-//                        .setContent("You clicked the map at " + e.latlng.toString() + " geohash: " + hash)
-//                        .openOn(map);
+            function showGeoHash(latlng, level) {
+                var hash = NGeoHash.encode(latlng.lat, latlng.lng, level);
 
                 var bb = NGeoHash.decode_bbox(hash);
                 var minlat = bb[0]; var minlon = bb[1]; var maxlat = bb[2]; var maxlon = bb[3];
@@ -62,8 +56,18 @@
                 console.dir(rect);
                 rect.addTo(map);
                 rect.on({
-                   mouseout: function() { removeRect(rect) }
+                    mouseout: function() { removeRect(rect) }
                 });
+            }
+
+            function onMapClick(e) {
+                console.log(e);
+                showGeoHash(e.latlng, 1);
+                showGeoHash(e.latlng, 2);
+                showGeoHash(e.latlng, 3);
+                showGeoHash(e.latlng, 4);
+                showGeoHash(e.latlng, 5);
+                showGeoHash(e.latlng, 6);
             }
 
             map.on('click', onMapClick);
