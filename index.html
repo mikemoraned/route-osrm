@@ -37,41 +37,102 @@
                 fillOpacity: 0.5
             }).addTo(map);
 
-            function showGeoHash(latlng, level, parent) {
-                var hash = NGeoHash.encode(latlng.lat, latlng.lng, level);
+            var boxes = {};
 
+            function onMouseout(e, hash) {
+                var box = boxes[hash];
+                if (box) {
+                    box.hideIfNotInside(e.latlng);
+                }
+                if (hash.length > 1) {
+                    var parentHash = hash.substring(0, hash.length - 1);
+                    onMouseout(e, parentHash);
+                }
+            }
+
+            function newBox(map, hash) {
                 var bb = NGeoHash.decode_bbox(hash);
                 var minlat = bb[0]; var minlon = bb[1]; var maxlat = bb[2]; var maxlon = bb[3];
                 var southWest = L.latLng(minlat, minlon),
                         northEast = L.latLng(maxlat, maxlon),
                         bounds = L.latLngBounds(southWest, northEast);
+
                 var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
                 console.dir(rect);
-                rect.addTo(map);
 
-                var box = {};
-                box.onMouseout = function(e) {
-                    if (!bounds.contains(e.latlng)) {
-                        console.log("remove " + rect);
-                        map.removeLayer(rect);
-                    }
-                    if (parent) {
-                        parent.onMouseout(e);
-                    }
-                };
+                var visible = false;
 
                 rect.on({
-                    mouseout: box.onMouseout
+                    mouseout: function(e) {
+                        onMouseout(e, hash);
+                    }
                 });
 
-                return box;
+                return {
+                    hideIfNotInside: function(latlng) {
+                        if (!bounds.contains(latlng)) {
+                            console.log("remove " + rect);
+                            map.removeLayer(rect);
+                            visible = false;
+                        }
+                    },
+                    show: function() {
+                        if (!visible) {
+                            rect.addTo(map);
+                            visible = true;
+                        }
+                    }
+                }
+            }
+
+//            function showGeoHash(hash, parent) {
+//                var bb = NGeoHash.decode_bbox(hash);
+//                var minlat = bb[0]; var minlon = bb[1]; var maxlat = bb[2]; var maxlon = bb[3];
+//                var southWest = L.latLng(minlat, minlon),
+//                        northEast = L.latLng(maxlat, maxlon),
+//                        bounds = L.latLngBounds(southWest, northEast);
+//                var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
+//                console.dir(rect);
+//                rect.addTo(map);
+//
+//                var box = {};
+//                box.onMouseout = function(e) {
+//                    if (!bounds.contains(e.latlng)) {
+//                        console.log("remove " + rect);
+//                        map.removeLayer(rect);
+//                        boxes[hash] = null;
+//                    }
+//                    if (parent) {
+//                        parent.onMouseout(e);
+//                    }
+//                };
+//
+//                rect.on({
+//                    mouseout: box.onMouseout
+//                });
+//
+//                return box;
+//            }
+
+            function findOrCreateBox(map, hash) {
+                var box = boxes[hash];
+                if (box) {
+                    return box;
+                }
+                else {
+                    box = newBox(map, hash);
+                    boxes[hash] = box;
+                    return box;
+                }
             }
 
             function onMapClick(e) {
                 console.log(e);
-                var parent = null;
+                console.dir(boxes);
                 for (var depth = 1; depth <= 6; depth++) {
-                    parent = showGeoHash(e.latlng, depth, parent);
+                    var hash = NGeoHash.encode(e.latlng.lat, e.latlng.lng, depth);
+                    var box = findOrCreateBox(map, hash);
+                    box.show();
                 }
             }
 
