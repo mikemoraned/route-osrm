@@ -39,14 +39,26 @@
 
             var boxes = {};
 
-            function onMouseout(e, hash) {
+            function hideIfNotInside(e, hash) {
                 var box = boxes[hash];
                 if (box) {
                     box.hideIfNotInside(e.latlng);
                 }
+            }
+
+            function onMouseout(e, hash) {
+                hideIfNotInside(e, hash);
+
                 if (hash.length > 1) {
                     var parentHash = hash.substring(0, hash.length - 1);
                     onMouseout(e, parentHash);
+                }
+                for (var prop in boxes) {
+                    if( boxes.hasOwnProperty( prop ) ) {
+                        if (prop != hash && prop.length == hash.length) {
+                            hideIfNotInside(e, prop);
+                        }
+                    }
                 }
             }
 
@@ -126,7 +138,7 @@
                 }
             }
 
-            function onMapClick(e) {
+            function addBoxes(e) {
                 console.log(e);
                 console.dir(boxes);
                 for (var depth = 1; depth <= 6; depth++) {
@@ -136,7 +148,8 @@
                 }
             }
 
-            map.on('click', onMapClick);
+//            map.on('click', addBoxes);
+            map.on('mousemove', addBoxes);
         }
         window.onload = main;
     </script>
