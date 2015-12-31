@@ -39,14 +39,19 @@
 
             var popup = L.popup();
 
+            function removeRect(rect) {
+                console.log("remove " + rect);
+                map.removeLayer(rect);
+            }
+
             function onMapClick(e) {
                 console.log(e);
                 var hash = NGeoHash.encode(e.latlng.lat, e.latlng.lng, 5);
 
-                popup
-                        .setLatLng(e.latlng)
-                        .setContent("You clicked the map at " + e.latlng.toString() + " geohash: " + hash)
-                        .openOn(map);
+//                popup
+//                        .setLatLng(e.latlng)
+//                        .setContent("You clicked the map at " + e.latlng.toString() + " geohash: " + hash)
+//                        .openOn(map);
 
                 var bb = NGeoHash.decode_bbox(hash);
                 var minlat = bb[0]; var minlon = bb[1]; var maxlat = bb[2]; var maxlon = bb[3];
@@ -56,22 +61,12 @@
                 var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
                 console.dir(rect);
                 rect.addTo(map);
+                rect.on({
+                   mouseout: function() { removeRect(rect) }
+                });
             }
 
             map.on('click', onMapClick);
-
-//            map.on('click', function(e) {
-//                console.log(e);
-//                var hash = NGeoHash.encode(e.latlng.lat, e.latlng.lng, 4);
-//                console.log(hash);
-//                var bb = NGeoHash.decode_bbox(hash);
-//                var southWest = L.latLng(40.712, -74.227),
-//                        northEast = L.latLng(40.774, -74.125),
-//                        bounds = L.latLngBounds(southWest, northEast);
-//                var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
-//                console.dir(rect);
-//                rect.addTo(map);
-//            });
         }
         window.onload = main;
     </script>
