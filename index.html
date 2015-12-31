@@ -12,45 +12,66 @@
         }
     </style>
 
-    <link rel="stylesheet" href="http://libs.cartocdn.com/cartodb.js/v3/3.15/themes/css/cartodb.css" />
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+
 </head>
 <body>
     <div id="map"></div>
 
-    <!-- include cartodb.js library -->
-    <script src="http://libs.cartocdn.com/cartodb.js/v3/3.15/cartodb.js"></script>
+    <script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
     <script src="ngeohash.js"></script>
 
     <script>
         function main() {
-            var map = new L.Map('map', {
-                center: [0,0],
-                zoom: 2
-            });
+            var map = L.map('map').setView([51.505, -0.09], 13);
 
             L.tileLayer('http://tile.stamen.com/toner/{z}/{x}/{y}.png', {
                 attribution: 'Stamen'
             }).addTo(map);
 
-            cartodb.createLayer(map, 'https://mikemoran.cartodb.com/api/v2/viz/e31380bc-af12-11e5-b443-0ea31932ec1d/viz.json')
-                    .addTo(map)
-                    .done(function() {
-                        map.on('click', function(e) {
-                            console.log(e);
-                            var hash = NGeoHash.encode(e.latlng.lat, e.latlng.lng, 4);
-                            console.log(hash);
-                            var bb = NGeoHash.decode_bbox(hash);
-                            var southWest = L.latLng(40.712, -74.227),
-                                    northEast = L.latLng(40.774, -74.125),
-                                    bounds = L.latLngBounds(southWest, northEast);
-                            var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
-                            console.dir(rect);
-                            rect.addTo(map);
-                        });
-                    })
-                    .error(function(err) {
-                        console.log(err);
-                    });
+            var marker = L.marker([51.5, -0.09]).addTo(map);
+
+            var circle = L.circle([51.508, -0.11], 500, {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.5
+            }).addTo(map);
+
+            var popup = L.popup();
+
+            function onMapClick(e) {
+                console.log(e);
+                var hash = NGeoHash.encode(e.latlng.lat, e.latlng.lng, 5);
+
+                popup
+                        .setLatLng(e.latlng)
+                        .setContent("You clicked the map at " + e.latlng.toString() + " geohash: " + hash)
+                        .openOn(map);
+
+                var bb = NGeoHash.decode_bbox(hash);
+                var minlat = bb[0]; var minlon = bb[1]; var maxlat = bb[2]; var maxlon = bb[3];
+                var southWest = L.latLng(minlat, minlon),
+                        northEast = L.latLng(maxlat, maxlon),
+                        bounds = L.latLngBounds(southWest, northEast);
+                var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
+                console.dir(rect);
+                rect.addTo(map);
+            }
+
+            map.on('click', onMapClick);
+
+//            map.on('click', function(e) {
+//                console.log(e);
+//                var hash = NGeoHash.encode(e.latlng.lat, e.latlng.lng, 4);
+//                console.log(hash);
+//                var bb = NGeoHash.decode_bbox(hash);
+//                var southWest = L.latLng(40.712, -74.227),
+//                        northEast = L.latLng(40.774, -74.125),
+//                        bounds = L.latLngBounds(southWest, northEast);
+//                var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
+//                console.dir(rect);
+//                rect.addTo(map);
+//            });
         }
         window.onload = main;
     </script>
