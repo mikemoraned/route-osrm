@@ -23,35 +23,29 @@
 
     <script>
         function main() {
-            cartodb.createVis('map', 'https://mikemoran.cartodb.com/api/v2/viz/e31380bc-af12-11e5-b443-0ea31932ec1d/viz.json', {
-                        shareable: true,
-                        title: true,
-                        description: true,
-                        search: true,
-                        tiles_loader: true,
-                        center_lat: 0,
-                        center_lon: 0,
-                        zoom: 2
-                    })
-                    .done(function(vis, layers) {
-//                        // layer 0 is the base layer, layer 1 is cartodb layer
-//                        // setInteraction is disabled by default
-//                        layers[1].setInteraction(true);
-//                        layers[1].on('featureOver', function(e, latlng, pos, data) {
-//                            cartodb.log.log(e, latlng, pos, data);
-//
-//                        });
-                        // you can get the native map to work with it
-                        var map = vis.getNativeMap();
-                        // now, perform any operations you need
-                        // map.setZoom(3);
-                        // map.panTo([50.5, 30.5]);
-                        console.dir(map);
+            var map = new L.Map('map', {
+                center: [0,0],
+                zoom: 2
+            });
 
+            L.tileLayer('http://tile.stamen.com/toner/{z}/{x}/{y}.png', {
+                attribution: 'Stamen'
+            }).addTo(map);
+
+            cartodb.createLayer(map, 'https://mikemoran.cartodb.com/api/v2/viz/e31380bc-af12-11e5-b443-0ea31932ec1d/viz.json')
+                    .addTo(map)
+                    .done(function() {
                         map.on('click', function(e) {
-                            cartodb.log.log(e);
+                            console.log(e);
                             var hash = NGeoHash.encode(e.latlng.lat, e.latlng.lng, 4);
-                            cartodb.log.log(hash);
+                            console.log(hash);
+                            var bb = NGeoHash.decode_bbox(hash);
+                            var southWest = L.latLng(40.712, -74.227),
+                                    northEast = L.latLng(40.774, -74.125),
+                                    bounds = L.latLngBounds(southWest, northEast);
+                            var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
+                            console.dir(rect);
+                            rect.addTo(map);
                         });
                     })
                     .error(function(err) {
