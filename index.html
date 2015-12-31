@@ -37,14 +37,7 @@
                 fillOpacity: 0.5
             }).addTo(map);
 
-            var popup = L.popup();
-
-            function removeRect(rect) {
-                console.log("remove " + rect);
-                map.removeLayer(rect);
-            }
-
-            function showGeoHash(latlng, level) {
+            function showGeoHash(latlng, level, parent) {
                 var hash = NGeoHash.encode(latlng.lat, latlng.lng, level);
 
                 var bb = NGeoHash.decode_bbox(hash);
@@ -55,19 +48,31 @@
                 var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
                 console.dir(rect);
                 rect.addTo(map);
+
+                var box = {};
+                box.onMouseout = function(e) {
+                    if (!bounds.contains(e.latlng)) {
+                        console.log("remove " + rect);
+                        map.removeLayer(rect);
+                    }
+                    if (parent) {
+                        parent.onMouseout(e);
+                    }
+                };
+
                 rect.on({
-                    mouseout: function() { removeRect(rect) }
+                    mouseout: box.onMouseout
                 });
+
+                return box;
             }
 
             function onMapClick(e) {
                 console.log(e);
-                showGeoHash(e.latlng, 1);
-                showGeoHash(e.latlng, 2);
-                showGeoHash(e.latlng, 3);
-                showGeoHash(e.latlng, 4);
-                showGeoHash(e.latlng, 5);
-                showGeoHash(e.latlng, 6);
+                var parent = null;
+                for (var depth = 1; depth <= 6; depth++) {
+                    parent = showGeoHash(e.latlng, depth, parent);
+                }
             }
 
             map.on('click', onMapClick);
