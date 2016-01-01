@@ -128,20 +128,84 @@
             var grid = gridForMap(map);
             grid.draw();
 
+            function pending(src, points, layer) {
+                var MAX_OUTSTANDING = 6;
+
+                var done = 0;
+                var outstanding = 0;
+
+                function info(msg) {
+                    console.log("[" + src + "]: ", done, ",", outstanding, ",", points.size, ": ", msg);
+                }
+
+                function takeWaypoints() {
+                    var remaining = points.skip(done);
+                    var allowed = MAX_OUTSTANDING - outstanding;
+                    var nextDests = remaining.take(allowed);
+                    outstanding += allowed;
+
+                    info("dispatching " + allowed);
+
+                    return nextDests.map(function(dest) {
+                        return [ { latLng: src }, { latLng: dest }];
+                    });
+                }
+
+                function isComplete() {
+                    return done === points.size;
+                }
+
+                function success(route) {
+                    info("success " + route);
+                    var line = L.Routing.line(route);
+                    layer.addLayer(line);
+                    done += 1;
+                    outstanding -= 1;
+                }
+
+                function failure(err) {
+                    info("error " + err);
+                    done += 1;
+                    outstanding -= 1;
+                }
+
+                return {
+                    take: takeWaypoints,
+                    isComplete: isComplete,
+                    success: success,
+                    failure: failure
+                };
+            }
+
             function routesForMap(map, grid) {
                 var osrm = L.Routing.osrm();
                 var routeLayer = L.layerGroup([]);
                 routeLayer.addTo(map);
 
-                function routeThrough(waypoints, layer) {
-                    function handleOSRMResult(err, routes) {
-                        if (!err) {
-                            console.dir(routes);
-                            var line = L.Routing.line(routes[0]);
-                            layer.addLayer(line);
+                var currentPending = null;
+
+                function dispatchNext() {
+                    if (currentPending) {
+                        if (currentPending.isComplete()) {
+                            currentPending = null;
                         }
                         else {
-                            console.dir(err);
+                            currentPending.take().forEach(function (waypoints) {
+                                routeThrough(waypoints, currentPending);
+                            });
+                        }
+                    }
+                }
+
+                function routeThrough(waypoints, pending) {
+                    function handleOSRMResult(err, routes) {
+                        if (!err) {
+//                            console.dir(routes);
+                            pending.success(routes[0]);
+                        }
+                        else {
+//                            console.dir(err);
+                            pending.failure(err);
                         }
                     }
 
@@ -154,16 +218,18 @@
                     }
                     routeLayer = L.layerGroup([]);
                     routeLayer.addTo(map);
-                    grid.points().forEach(function(dest) {
-                        routeThrough([ { latLng: src }, { latLng: dest }], routeLayer);
-                    });
+                    currentPending = pending(src, grid.points(), routeLayer);
                 };
 
                 return {
-                    showAllRoutesFrom: showAllRoutesFrom
+                    showAllRoutesFrom: showAllRoutesFrom,
+                    start: function(interval) {
+                        setInterval(dispatchNext, interval);
+                    }
                 };
             };
             var routes = routesForMap(map, grid);
+            routes.start(200);
 
             map.on('click', function(e) {
                 routes.showAllRoutesFrom(e.latlng);
