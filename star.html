@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Basic</title>
+    <link rel="shortcut icon" href="http://cartodb.com/assets/favicon.ico" />
+    <style>
+        html, body, #map {
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+    <link rel="stylesheet" href="node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
+    <script src="node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/immutable/3.7.6/immutable.min.js"></script>
+    <script src="ngeohash.js"></script>
+
+    <script>
+        function main() {
+            var map = L.map('map').setView([55.925022, -3.176715], 13);
+
+            L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            function rectFromHash(hash) {
+                var bb = NGeoHash.decode_bbox(hash);
+                var minlat = bb[0]; var minlon = bb[1]; var maxlat = bb[2]; var maxlon = bb[3];
+                var southWest = L.latLng(minlat, minlon),
+                        northEast = L.latLng(maxlat, maxlon),
+                        bounds = L.latLngBounds(southWest, northEast);
+
+                var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
+
+                console.log(hash, " -> ", rect);
+
+                return rect;
+            }
+
+            function hashesCoveringMapView(map, depth) {
+                var b = map.getBounds();
+                return Immutable.fromJS(NGeoHash.bboxes(b.getSouth(), b.getWest(), b.getNorth(), b.getEast(), depth));
+            }
+
+            function coveringRectsLayer(map, depth) {
+                var hashes = hashesCoveringMapView(map, depth);
+                console.log(hashes.toArray());
+                var group = L.layerGroup(
+                        hashes.map(function(h) {
+                            return rectFromHash(h);
+                        }).toArray()
+                );
+                console.dir(group);
+                return group;
+            }
+
+            var osrm = L.Routing.osrm();
+
+            var index = 0;
+            var waypoints = [
+                { latLng: L.latLng(55.925022, -3.176715) },
+                { latLng: L.latLng(57.6792, 11.949) }
+            ];
+            map.on('click', function(e) {
+                waypoints[index] = { latLng: e.latlng };
+                index++;
+                if (index > waypoints.length - 1) {
+                    index = 0;
+                    routeThrough(waypoints);
+                }
+            });
+
+            var line = null;
+            function handleOSRMResult(err, routes) {
+                if (!err) {
+                    console.dir(routes);
+                    if (line) {
+                        map.removeLayer(line);
+                    }
+                    line = L.Routing.line(routes[0]).addTo(map);
+                    map.fitBounds(line.getBounds());
+                }
+            }
+
+            function routeThrough(waypoints) {
+                osrm.route(waypoints, handleOSRMResult, {}, {});
+            }
+
+            //routeThrough(waypoints);
+            coveringRectsLayer(map, 6).addTo(map);
+        }
+        window.onload = main;
+    </script>
+</body>
+</html>
