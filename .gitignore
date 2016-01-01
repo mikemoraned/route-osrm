@@ -15,4 +15,4 @@ project/boot/
 ## Directory-based project format:
 .idea/
 *.iml
-node_modules/
+
