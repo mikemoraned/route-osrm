@@ -106,7 +106,18 @@
             }
 
             //routeThrough(waypoints);
-            coveringRectsLayer(map, 2000).addTo(map);
+            var coveringRects;
+            function fitCoveringRects() {
+                if (coveringRects) {
+                    map.removeLayer(coveringRects);
+                }
+                coveringRects = coveringRectsLayer(map, 2000);
+                coveringRects.addTo(map);
+            }
+            map.on('zoomend', fitCoveringRects);
+            map.on('viewreset', fitCoveringRects);
+            map.on('moveend', fitCoveringRects);
+            fitCoveringRects();
         }
         window.onload = main;
     </script>
