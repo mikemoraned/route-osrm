@@ -98,40 +98,6 @@
                 return group;
             }
 
-            var osrm = L.Routing.osrm();
-
-            var index = 0;
-            var waypoints = [
-                { latLng: L.latLng(55.925022, -3.176715) },
-                { latLng: L.latLng(57.6792, 11.949) }
-            ];
-            map.on('click', function(e) {
-                waypoints[index] = { latLng: e.latlng };
-                index++;
-                if (index > waypoints.length - 1) {
-                    index = 0;
-                    routeThrough(waypoints);
-                }
-            });
-
-            var line = null;
-            function handleOSRMResult(err, routes) {
-                if (!err) {
-                    console.dir(routes);
-                    if (line) {
-                        map.removeLayer(line);
-                    }
-                    line = L.Routing.line(routes[0]).addTo(map);
-                    map.fitBounds(line.getBounds());
-                }
-            }
-
-            function routeThrough(waypoints) {
-                osrm.route(waypoints, handleOSRMResult, {}, {});
-            }
-
-            //routeThrough(waypoints);
-
             var coveringRects;
             function fitCoveringRects() {
                 if (coveringRects) {
