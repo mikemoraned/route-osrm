@@ -46,13 +46,23 @@
                 return rect;
             }
 
-            function hashesCoveringMapView(map, depth) {
+            function hashesCoveringMapViewAtDepth(map, depth) {
                 var b = map.getBounds();
                 return Immutable.fromJS(NGeoHash.bboxes(b.getSouth(), b.getWest(), b.getNorth(), b.getEast(), depth));
             }
 
-            function coveringRectsLayer(map, depth) {
-                var hashes = hashesCoveringMapView(map, depth);
+            function hashesCoveringMapView(map, maxHashes) {
+                return Immutable.Range(1,8)
+                        .map(function(depth) {
+                            return hashesCoveringMapViewAtDepth(map, depth);
+                        })
+                        .findLast(function(hashes) {
+                            return hashes.size <= maxHashes;
+                        });
+            }
+
+            function coveringRectsLayer(map, maxHashes) {
+                var hashes = hashesCoveringMapView(map, maxHashes);
                 console.log(hashes.toArray());
                 var group = L.layerGroup(
                         hashes.map(function(h) {
@@ -96,7 +106,7 @@
             }
 
             //routeThrough(waypoints);
-            coveringRectsLayer(map, 6).addTo(map);
+            coveringRectsLayer(map, 2000).addTo(map);
         }
         window.onload = main;
     </script>
