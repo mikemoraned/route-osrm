@@ -47,69 +47,73 @@
 
                 var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
 
-                console.log(hash, " -> ", rect);
-
                 return rect;
             }
 
-            function hashesCoveringMapViewAtDepth(b, depth) {
-                return Immutable.fromJS(NGeoHash.bboxes(b.getSouth(), b.getWest(), b.getNorth(), b.getEast(), depth));
-            }
+            function gridForMap(map) {
+                var MAX_GRID_ELEMENTS = 1000;
+                var MAX_DEPTH = 8;
 
-            function hashBoundsAtDepth(latLng, depth) {
-                var hash = NGeoHash.encode(latLng.lat, latLng.lng, depth);
-                var bounds = latLngBoundsFromHash(hash);
-                return bounds;
-            }
-
-            function smallestContainingHash(bounds, maxDepth) {
-                var centre = bounds.getCenter();
-                var depthBoundsPair = Immutable.Range(1,maxDepth)
-                        .map(function(depth) {
-                            return hashBoundsAtDepth(centre, depth);
-                        })
-                        .findLastEntry(function(hashBounds) {
-                            return hashBounds.contains(bounds);
-                        });
-                return depthBoundsPair[0];
-            }
-
-            function hashesCoveringMapView(bounds, maxHashes) {
-                var minDepthContainingBounds = smallestContainingHash(bounds, 9);
-                var searchDepth = minDepthContainingBounds + 2;
-                return Immutable.Range(minDepthContainingBounds, searchDepth + 1)
-                        .map(function(depth) {
-                            return hashesCoveringMapViewAtDepth(bounds, depth);
-                        })
-                        .findLast(function(hashes) {
-                            return hashes.size <= maxHashes;
-                        });
-            }
-
-            function coveringRectsLayer(map, maxHashes) {
-                var hashes = hashesCoveringMapView(map.getBounds(), maxHashes);
-                console.log(hashes.toArray());
-                var group = L.layerGroup(
-                        hashes.map(function(h) {
-                            return rectFromHash(h);
-                        }).toArray()
-                );
-                console.dir(group);
-                return group;
-            }
-
-            var coveringRects;
-            function fitCoveringRects() {
-                if (coveringRects) {
-                    map.removeLayer(coveringRects);
+                function findBestDepth(bounds) {
+                    return Immutable.Range(1, MAX_DEPTH + 1)
+                            .takeWhile(function(depth) {
+                               return buildHashes(depth, bounds).size <= MAX_GRID_ELEMENTS;
+                            })
+                            .last();
                 }
-                coveringRects = coveringRectsLayer(map, 1000);
-                coveringRects.addTo(map);
-            }
-            map.on('zoomend', fitCoveringRects);
-            map.on('viewreset', fitCoveringRects);
-            map.on('moveend', fitCoveringRects);
-            fitCoveringRects();
+
+                function buildHashes(depth, b) {
+                    return Immutable.fromJS(
+                            NGeoHash.bboxes(b.getSouth(), b.getWest(), b.getNorth(), b.getEast(), depth)
+                    );
+                }
+
+                function buildGridLayer(hashes) {
+//                    console.log(hashes.toArray());
+                    var group = L.layerGroup(
+                            hashes.map(function (h) {
+                                return rectFromHash(h);
+                            }).toArray()
+                    );
+//                    console.dir(group);
+                    return group;
+                }
+
+                var gridLayer = null;
+
+                function drawGrid() {
+                    if (gridLayer) {
+                        map.removeLayer(gridLayer);
+                    }
+                    gridLayer = buildGridLayer(buildHashes(bestDepth, map.getBounds()));
+                    gridLayer.addTo(map);
+                }
+
+                var bestDepth;
+
+                function fullRedraw() {
+                    console.log("full redraw");
+                    bestDepth = findBestDepth(map.getBounds());
+                    console.log("best depth: ", bestDepth);
+                    drawGrid();
+                }
+
+                function partialRedraw() {
+                    console.log("partial redraw");
+                    drawGrid();
+                }
+
+                map.on('zoomend', fullRedraw);
+                map.on('viewreset', fullRedraw);
+                map.on('moveend', partialRedraw);
+
+                return {
+                    draw: fullRedraw
+                };
+            };
+
+            var grid = gridForMap(map);
+            grid.draw();
         }
         window.onload = main;
     </script>
