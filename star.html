@@ -45,7 +45,9 @@
             function rectFromHash(hash) {
                 var bounds = latLngBoundsFromHash(hash);
 
-                var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
+                var rect = L.rectangle(bounds, {
+                    color: "#ffffff", weight: 5, opacity: 0.2
+                });
 
                 return rect;
             }
