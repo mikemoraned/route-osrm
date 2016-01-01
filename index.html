@@ -128,35 +128,46 @@
             var grid = gridForMap(map);
             grid.draw();
 
-            var osrm = L.Routing.osrm();
-            var routeLayer = null;
+            function routesForMap(map, grid) {
+                var osrm = L.Routing.osrm();
+                var routeLayer = L.layerGroup([]);
+                routeLayer.addTo(map);
+
+                function routeThrough(waypoints, layer) {
+                    function handleOSRMResult(err, routes) {
+                        if (!err) {
+                            console.dir(routes);
+                            var line = L.Routing.line(routes[0]);
+                            layer.addLayer(line);
+                        }
+                        else {
+                            console.dir(err);
+                        }
+                    }
+
+                    osrm.route(waypoints, handleOSRMResult, {}, {});
+                };
+
+                function showAllRoutesFrom(src) {
+                    if (routeLayer) {
+                        map.removeLayer(routeLayer);
+                    }
+                    routeLayer = L.layerGroup([]);
+                    routeLayer.addTo(map);
+                    grid.points().forEach(function(dest) {
+                        routeThrough([ { latLng: src }, { latLng: dest }], routeLayer);
+                    });
+                };
+
+                return {
+                    showAllRoutesFrom: showAllRoutesFrom
+                };
+            };
+            var routes = routesForMap(map, grid);
 
             map.on('click', function(e) {
-                if (routeLayer) {
-                    map.removeLayer(routeLayer);
-                }
-                routeLayer = L.layerGroup([]);
-                routeLayer.addTo(map);
-                var src = e.latlng;
-                grid.points().forEach(function(dest) {
-                    routeThrough([ { latLng: src }, { latLng: dest }], routeLayer);
-                });
+                routes.showAllRoutesFrom(e.latlng);
             });
-
-            function routeThrough(waypoints, layer) {
-                function handleOSRMResult(err, routes) {
-                    if (!err) {
-                        console.dir(routes);
-                        var line = L.Routing.line(routes[0]);
-                        layer.addLayer(line);
-                    }
-                    else {
-                        console.dir(err);
-                    }
-                }
-
-                osrm.route(waypoints, handleOSRMResult, {}, {});
-            }
         }
         window.onload = main;
     </script>
