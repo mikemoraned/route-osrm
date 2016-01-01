@@ -13,135 +13,148 @@
     </style>
 
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+    <link rel="stylesheet" href="node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
 
 </head>
 <body>
     <div id="map"></div>
 
     <script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
+    <script src="node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/immutable/3.7.6/immutable.min.js"></script>
     <script src="ngeohash.js"></script>
 
     <script>
         function main() {
-            var map = L.map('map').setView([51.505, -0.09], 13);
+            var map = L.map('map').setView([55.925022, -3.176715], 13);
 
             L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            var boxes = {};
-
-            function hideIfNotInside(e, hash) {
-                var box = boxes[hash];
-                if (box) {
-                    box.hideIfNotInside(e.latlng);
-                }
-            }
-
-            function onMouseout(e, hash) {
-                hideIfNotInside(e, hash);
-
-                if (hash.length > 1) {
-                    var parentHash = hash.substring(0, hash.length - 1);
-                    onMouseout(e, parentHash);
-                }
-                for (var prop in boxes) {
-                    if( boxes.hasOwnProperty( prop ) ) {
-                        if (prop != hash && prop.length == hash.length) {
-                            hideIfNotInside(e, prop);
-                        }
-                    }
-                }
-            }
-
-            function newBox(map, hash) {
+            function latLngBoundsFromHash(hash) {
                 var bb = NGeoHash.decode_bbox(hash);
                 var minlat = bb[0]; var minlon = bb[1]; var maxlat = bb[2]; var maxlon = bb[3];
                 var southWest = L.latLng(minlat, minlon),
                         northEast = L.latLng(maxlat, maxlon),
                         bounds = L.latLngBounds(southWest, northEast);
 
+                return bounds;
+            }
+
+            function rectFromHash(hash) {
+                var bounds = latLngBoundsFromHash(hash);
+
                 var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
-                console.dir(rect);
 
-                var visible = false;
+                return rect;
+            }
 
-                rect.on({
-                    mouseout: function(e) {
-                        onMouseout(e, hash);
+            function gridForMap(map) {
+                var MAX_GRID_ELEMENTS = 700;
+                var MAX_DEPTH = 8;
+
+                function findBestDepth(bounds) {
+                    return Immutable.Range(1, MAX_DEPTH + 1)
+                            .takeWhile(function(depth) {
+                               return buildHashes(depth, bounds).size <= MAX_GRID_ELEMENTS;
+                            })
+                            .last();
+                }
+
+                function buildHashes(depth, b) {
+                    return Immutable.fromJS(
+                            NGeoHash.bboxes(b.getSouth(), b.getWest(), b.getNorth(), b.getEast(), depth)
+                    );
+                }
+
+                function buildGridLayer(hashes) {
+//                    console.log(hashes.toArray());
+                    var group = L.layerGroup(
+                            hashes.map(function (h) {
+                                return rectFromHash(h);
+                            }).toArray()
+                    );
+//                    console.dir(group);
+                    return group;
+                }
+
+                var gridLayer = null;
+                var gridHashes = null;
+
+                function drawGrid() {
+                    if (gridLayer) {
+                        map.removeLayer(gridLayer);
                     }
-                });
+                    gridHashes = buildHashes(bestDepth, map.getBounds());
+                    gridLayer = buildGridLayer(gridHashes);
+                    gridLayer.addTo(map);
+                }
+
+                var bestDepth;
+
+                function fullRedraw() {
+                    console.log("full redraw");
+                    bestDepth = findBestDepth(map.getBounds());
+                    console.log("best depth: ", bestDepth);
+                    drawGrid();
+                }
+
+                function partialRedraw() {
+                    console.log("partial redraw");
+                    drawGrid();
+                }
+
+                function gridCenters() {
+                    return gridHashes
+                            .map(function(hash) {
+                                var bounds = latLngBoundsFromHash(hash);
+                                return bounds.getCenter();
+                            });
+                }
+
+                map.on('zoomend', fullRedraw);
+                map.on('viewreset', fullRedraw);
+                map.on('moveend', partialRedraw);
 
                 return {
-                    hideIfNotInside: function(latlng) {
-                        if (!bounds.contains(latlng)) {
-                            console.log("remove " + rect);
-                            map.removeLayer(rect);
-                            visible = false;
-                        }
-                    },
-                    show: function() {
-                        if (!visible) {
-                            rect.addTo(map);
-                            visible = true;
-                        }
+                    draw: fullRedraw,
+                    points: gridCenters
+                };
+            };
+
+            var grid = gridForMap(map);
+            grid.draw();
+
+            var osrm = L.Routing.osrm();
+            var routeLayer = null;
+
+            map.on('click', function(e) {
+                if (routeLayer) {
+                    map.removeLayer(routeLayer);
+                }
+                routeLayer = L.layerGroup([]);
+                routeLayer.addTo(map);
+                var src = e.latlng;
+                grid.points().forEach(function(dest) {
+                    routeThrough([ { latLng: src }, { latLng: dest }], routeLayer);
+                });
+            });
+
+            function routeThrough(waypoints, layer) {
+                function handleOSRMResult(err, routes) {
+                    if (!err) {
+                        console.dir(routes);
+                        var line = L.Routing.line(routes[0]);
+                        layer.addLayer(line);
+                    }
+                    else {
+                        console.dir(err);
                     }
                 }
+
+                osrm.route(waypoints, handleOSRMResult, {}, {});
             }
-
-//            function showGeoHash(hash, parent) {
-//                var bb = NGeoHash.decode_bbox(hash);
-//                var minlat = bb[0]; var minlon = bb[1]; var maxlat = bb[2]; var maxlon = bb[3];
-//                var southWest = L.latLng(minlat, minlon),
-//                        northEast = L.latLng(maxlat, maxlon),
-//                        bounds = L.latLngBounds(southWest, northEast);
-//                var rect = L.rectangle(bounds, {color: "#ff7800", weight: 1});
-//                console.dir(rect);
-//                rect.addTo(map);
-//
-//                var box = {};
-//                box.onMouseout = function(e) {
-//                    if (!bounds.contains(e.latlng)) {
-//                        console.log("remove " + rect);
-//                        map.removeLayer(rect);
-//                        boxes[hash] = null;
-//                    }
-//                    if (parent) {
-//                        parent.onMouseout(e);
-//                    }
-//                };
-//
-//                rect.on({
-//                    mouseout: box.onMouseout
-//                });
-//
-//                return box;
-//            }
-
-            function findOrCreateBox(map, hash) {
-                var box = boxes[hash];
-                if (box) {
-                    return box;
-                }
-                else {
-                    box = newBox(map, hash);
-                    boxes[hash] = box;
-                    return box;
-                }
-            }
-
-            function addBoxes(e) {
-                console.log(e);
-                console.dir(boxes);
-                for (var depth = 1; depth <= 6; depth++) {
-                    var hash = NGeoHash.encode(e.latlng.lat, e.latlng.lng, depth);
-                    var box = findOrCreateBox(map, hash);
-                    box.show();
-                }
-            }
-
-//            map.on('click', addBoxes);
-            map.on('mousemove', addBoxes);
         }
         window.onload = main;
     </script>
