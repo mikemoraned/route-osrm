@@ -80,12 +80,14 @@
                 }
 
                 var gridLayer = null;
+                var gridHashes = null;
 
                 function drawGrid() {
                     if (gridLayer) {
                         map.removeLayer(gridLayer);
                     }
-                    gridLayer = buildGridLayer(buildHashes(bestDepth, map.getBounds()));
+                    gridHashes = buildHashes(bestDepth, map.getBounds());
+                    gridLayer = buildGridLayer(gridHashes);
                     gridLayer.addTo(map);
                 }
 
@@ -103,17 +105,56 @@
                     drawGrid();
                 }
 
+                function gridCenters() {
+                    return gridHashes
+                            .map(function(hash) {
+                                var bounds = latLngBoundsFromHash(hash);
+                                return bounds.getCenter();
+                            });
+                }
+
                 map.on('zoomend', fullRedraw);
                 map.on('viewreset', fullRedraw);
                 map.on('moveend', partialRedraw);
 
                 return {
-                    draw: fullRedraw
+                    draw: fullRedraw,
+                    points: gridCenters
                 };
             };
 
             var grid = gridForMap(map);
             grid.draw();
+
+            var osrm = L.Routing.osrm();
+            var routeLayer = null;
+
+            map.on('click', function(e) {
+                if (routeLayer) {
+                    map.removeLayer(routeLayer);
+                }
+                routeLayer = L.layerGroup([]);
+                routeLayer.addTo(map);
+                var src = e.latlng;
+                grid.points().forEach(function(dest) {
+                    routeThrough([ { latLng: src }, { latLng: dest }], routeLayer);
+                });
+            });
+
+            function routeThrough(waypoints, layer) {
+                function handleOSRMResult(err, routes) {
+                    if (!err) {
+                        console.dir(routes);
+                        var line = L.Routing.line(routes[0]);
+                        layer.addLayer(line);
+                    }
+                    else {
+                        console.dir(err);
+                    }
+                }
+
+                osrm.route(waypoints, handleOSRMResult, {}, {});
+            }
         }
         window.onload = main;
     </script>
