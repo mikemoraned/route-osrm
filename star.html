@@ -126,9 +126,7 @@
             var grid = gridForMap(map);
             grid.draw();
 
-            var osrm = L.Routing.osrm({
-                serviceUrl: "//192.168.99.101:5000/viaroute"
-            });
+            var osrm = L.Routing.osrm();
             var routeLayer = null;
 
             map.on('click', function(e) {
