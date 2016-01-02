@@ -12,16 +12,19 @@
         }
     </style>
 
-    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-1.0.0-b1/leaflet.css" />
     <link rel="stylesheet" href="node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/leaflet.esri.geocoder/2.0.0/esri-leaflet-geocoder.css">
 
 </head>
 <body>
     <div id="map"></div>
 
-    <script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
+    <script src="http://cdn.leafletjs.com/leaflet-1.0.0-b1/leaflet.js"></script>
     <script src="node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/immutable/3.7.6/immutable.min.js"></script>
+    <script src="//cdn.jsdelivr.net/leaflet.esri/2.0.0-beta.6/esri-leaflet.js"></script>
+    <script src="//cdn.jsdelivr.net/leaflet.esri.geocoder/2.0.0/esri-leaflet-geocoder.js"></script>
     <script src="ngeohash.js"></script>
 
     <script>
@@ -161,6 +164,15 @@
 
                 osrm.route(waypoints, handleOSRMResult, {}, {});
             }
+
+            var arcgisOnline = L.esri.Geocoding.arcgisOnlineProvider();
+
+            // create the geocoding control and add it to the map
+            var searchControl = L.esri.Geocoding.geosearch({
+                providers: [arcgisOnline],
+                useMapBounds: false
+            }).addTo(map);
+
         }
         window.onload = main;
     </script>
