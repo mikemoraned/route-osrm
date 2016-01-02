@@ -144,7 +144,11 @@
             });
 
             function routeThrough(waypoints, layer) {
+                var tmpLine = L.polyline([ waypoints[0].latLng, waypoints[1].latLng ], {color: 'red'});
+                layer.addLayer(tmpLine);
+
                 function handleOSRMResult(err, routes) {
+                    layer.removeLayer(tmpLine);
                     if (!err) {
                         console.dir(routes);
                         var line = L.Routing.line(routes[0]);
