@@ -19,13 +19,7 @@
     <!--[if lt IE 9]>
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.1.1/gh-fork-ribbon.ie.min.css" />
     <![endif]-->
-
-    <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/L.Control.Locate.mapbox.css' rel='stylesheet' />
-    <!--[if lt IE 9]>
-      <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/L.Control.Locate.ie.css' rel='stylesheet' />
-    <![endif]-->
-    <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/css/font-awesome.min.css' rel='stylesheet' />
-
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
     <link rel="stylesheet" href="node_modules/leaflet-geonames/L.Control.Geonames.css" />
 </head>
 <body>
@@ -34,14 +28,12 @@
     <script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
     <script src="node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/immutable/3.7.6/immutable.min.js"></script>
-    <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/L.Control.Locate.min.js'></script>
     <script src="node_modules/leaflet-geonames/L.Control.Geonames.min.js"></script>
     <script src="ngeohash.js"></script>
 
     <script>
         function main() {
             var map = L.map('map').setView([55.925022, -3.176715], 13);
-            L.control.locate().addTo(map);
             L.control.geonames({
                 username: 'mikemoran',
                 zoomLevel: 13,
