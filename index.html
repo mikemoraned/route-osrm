@@ -25,6 +25,8 @@
       <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/L.Control.Locate.ie.css' rel='stylesheet' />
     <![endif]-->
     <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/css/font-awesome.min.css' rel='stylesheet' />
+
+    <link rel="stylesheet" href="node_modules/leaflet-geonames/L.Control.Geonames.css" />
 </head>
 <body>
     <div id="map"></div>
@@ -33,12 +35,18 @@
     <script src="node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/immutable/3.7.6/immutable.min.js"></script>
     <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-locatecontrol/v0.43.0/L.Control.Locate.min.js'></script>
+    <script src="node_modules/leaflet-geonames/L.Control.Geonames.min.js"></script>
     <script src="ngeohash.js"></script>
 
     <script>
         function main() {
             var map = L.map('map').setView([55.925022, -3.176715], 13);
             L.control.locate().addTo(map);
+            L.control.geonames({
+                username: 'mikemoran',
+                zoomLevel: 13,
+                markNames: false
+            }).addTo(map);
 
             L.tileLayer('http://a.tile.stamen.com/toner/{z}/{x}/{y}.png', {
                 attribution: 'stamen http://maps.stamen.com/'
