@@ -44,7 +44,8 @@
             L.control.locate().addTo(map);
             L.control.geonames({
                 username: 'mikemoran',
-                zoomLevel: 13
+                zoomLevel: 13,
+                markNames: false
             }).addTo(map);
 
             L.tileLayer('http://a.tile.stamen.com/toner/{z}/{x}/{y}.png', {
