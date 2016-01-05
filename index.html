@@ -21,6 +21,7 @@
     <![endif]-->
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
     <link rel="stylesheet" href="node_modules/leaflet-geonames/L.Control.Geonames.css" />
+    <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css' rel='stylesheet' />
 </head>
 <body>
     <div id="map"></div>
@@ -28,12 +29,16 @@
     <script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
     <script src="node_modules/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/immutable/3.7.6/immutable.min.js"></script>
+    <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
     <script src="node_modules/leaflet-geonames/L.Control.Geonames.min.js"></script>
     <script src="ngeohash.js"></script>
 
     <script>
         function main() {
-            var map = L.map('map').setView([55.925022, -3.176715], 13);
+            var map = L.map('map',{
+                fullscreenControl: true
+            });
+            map.setView([55.925022, -3.176715], 13);
             L.control.geonames({
                 username: 'mikemoran',
                 zoomLevel: 13,
