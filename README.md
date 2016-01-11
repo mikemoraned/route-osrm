@@ -1,6 +1,8 @@
 # Playing with routes
 
-<iframe width="420" height="315" src="https://www.youtube.com/embed/xpDGG8zKk28" frameborder="0" allowfullscreen></iframe>
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=xpDGG8zKk28
+" target="_blank"><img src="http://img.youtube.com/vi/xpDGG8zKk28/0.jpg" 
+alt="Routes around Edinburgh, New York and Jerusalem " width="240" height="180" border="10" /></a>
 
 See http://mikemoraned.github.io/route-osrm/ for an example of combining https://github.com/Project-OSRM/osrm-backend
 and http://www.liedman.net/leaflet-routing-machine/ to find distance between a clicked location and a selection of
